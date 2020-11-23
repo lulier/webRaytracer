@@ -12,8 +12,10 @@ class Light{
 }
 
 class Material{
-    constructor(color){
+    constructor(color,albedo,specularExponent){
         this.color = color;
+        this.albedo = albedo;
+        this.specularExponent = specularExponent;
     }
 }
 
@@ -28,8 +30,8 @@ class Scene{
 let scene = new Scene();
 
 (()=>{
-    let redMaterial = new Material(new TGAColor(76,25,25,255));
-    let ivoryMaterial = new Material(new TGAColor(102,102,76,255))
+    let redMaterial = new Material(new TGAColor(76,25,25,255),[0.6,0.3],50);
+    let ivoryMaterial = new Material(new TGAColor(102,102,76,255),[0.9,0.1],10);
 
     let spheres = [];
     spheres.push(new Sphere(new Vector(-3,0,-16),2,ivoryMaterial));
@@ -39,6 +41,8 @@ let scene = new Scene();
 
     let lights = [];
     lights.push(new Light(new Vector(-20,20,20),1.5));
+    lights.push(new Light(new Vector(30,50,-25),1.8));
+    lights.push(new Light(new Vector(30,20,30),1.7));
 
     scene.spheres = spheres;
     scene.lights = lights;
@@ -52,13 +56,31 @@ function castRay(origin,dir){
         return scene.background;
     }
 
-    let diffuseIntensity = 0
+    let diffuseIntensity = 0;
+    let specularIntensity = 0;
+    let viewDir = Vector.neg(dir);
     for (let i = 0; i < scene.lights.length; i++) {
         let lightDir = Vector.sub(scene.lights[i].position,point).normalize();
-        diffuseIntensity += Math.max(0,Vector.dot(lightDir,normal));
+        diffuseIntensity += Math.max(0,Vector.dot(lightDir,normal)) * scene.lights[i].intensity;
+        let halfVector = Vector.add(lightDir,viewDir).normalize();
+        specularIntensity += Math.pow(Math.max(0,Vector.dot(halfVector,normal)),material.specularExponent)*scene.lights[i].intensity;
     }
 
-    return new TGAColor(material.color.r*diffuseIntensity,material.color.g*diffuseIntensity,material.color.b*diffuseIntensity);
+    diffuseIntensity = diffuseIntensity * material.albedo[0];
+    specularIntensity = specularIntensity * material.albedo[1];
+
+    let result = new TGAColor(material.color.r*diffuseIntensity,material.color.g*diffuseIntensity,material.color.b*diffuseIntensity);
+    result.r = Math.floor(result.r + 255 * specularIntensity);
+    result.g = Math.floor(result.g + 255 * specularIntensity);
+    result.b = Math.floor(result.b + 255 * specularIntensity);
+    let max = Math.max(result.r,Math.max(result.g,result.b));
+    if(max > 255){
+        result.r = Math.floor(result.r * (255/max));
+        result.g = Math.floor(result.g * (255/max));
+        result.b = Math.floor(result.b * (255/max));
+    }
+    
+    return result;
 }
 
 function sceneIntersect(origin,dir){
