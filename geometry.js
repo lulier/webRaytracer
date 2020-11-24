@@ -10,7 +10,7 @@ class Sphere{
 
     // http://www.lighthouse3d.com/tutorials/maths/ray-sphere-intersection
     rayIntersect(origin,direction){
-        let distance = new Vector(this.center.x - origin.x,this.center.y - origin.y,this.center.z - origin.z);
+        let distance = Vector.sub(this.center,origin);
         let proj = Vector.dot(distance,direction);
         let distance2 = Vector.dot(distance,distance) - proj * proj;
         if(distance2 > this.radiusP){

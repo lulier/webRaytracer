@@ -30,14 +30,15 @@ class Scene{
 let scene = new Scene();
 
 (()=>{
-    let redMaterial = new Material(new TGAColor(76,25,25,255),[0.6,0.3],50);
-    let ivoryMaterial = new Material(new TGAColor(102,102,76,255),[0.9,0.1],10);
+    let ivoryMaterial = new Material(new TGAColor(102,102,76,255),[0.6,0.3,0.1],50);
+    let redMaterial = new Material(new TGAColor(76,25,25,255),[0.9,0.1,0.0],30);
+    let mirrorMaterial = new Material(new TGAColor(255,255,255,255),[0.0,10,0.8],1425);
 
     let spheres = [];
     spheres.push(new Sphere(new Vector(-3,0,-16),2,ivoryMaterial));
-    spheres.push(new Sphere(new Vector(-1,-1.5,-12),2,redMaterial));
-    spheres.push(new Sphere(new Vector(1.5,0.5,-18),3,redMaterial));
-    spheres.push(new Sphere(new Vector(7,5,-18),4,ivoryMaterial));
+    spheres.push(new Sphere(new Vector(-1,-1.5,-12),2,mirrorMaterial));
+    spheres.push(new Sphere(new Vector(1.5,-0.5,-18),3,redMaterial));
+    spheres.push(new Sphere(new Vector(7,5,-18),4,mirrorMaterial));
 
     let lights = [];
     lights.push(new Light(new Vector(-20,20,20),1.5));
@@ -50,29 +51,43 @@ let scene = new Scene();
     render();
 })()
 
-function castRay(origin,dir){
+function reflect(dir,normal){
+    return Vector.sub(dir,Vector.mul(normal,2*Vector.dot(dir,normal)));
+}
+
+function castRay(origin,dir,depth){
     let {intersect,point,normal,material} = sceneIntersect(origin,dir);
-    if(!intersect){
+    if(!intersect || depth > 4){
         return scene.background;
     }
 
+    let reflectDir = reflect(dir,normal).normalize();
+    let reflectPoint = Vector.add(point,Vector.mul(normal,Vector.dot(reflectDir,normal) < 0? -0.001:0.001));
+    let reflectColor = castRay(reflectPoint,reflectDir,depth+1);
     let diffuseIntensity = 0;
     let specularIntensity = 0;
     let viewDir = Vector.neg(dir);
     for (let i = 0; i < scene.lights.length; i++) {
-        let lightDir = Vector.sub(scene.lights[i].position,point).normalize();
-        diffuseIntensity += Math.max(0,Vector.dot(lightDir,normal)) * scene.lights[i].intensity;
-        let halfVector = Vector.add(lightDir,viewDir).normalize();
-        specularIntensity += Math.pow(Math.max(0,Vector.dot(halfVector,normal)),material.specularExponent)*scene.lights[i].intensity;
+        let lightDir = Vector.sub(scene.lights[i].position,point);
+        let lightDistance = lightDir.len();
+        lightDir.normalize();
+    
+        let shadowPoint = Vector.add(point,Vector.mul(normal,Vector.dot(lightDir,normal) < 0? -0.001:0.001));
+        let shadowIntersect = sceneIntersect(shadowPoint,lightDir);
+        if(!shadowIntersect.intersect || Vector.sub(shadowIntersect.point,point).len() >= lightDistance){
+            diffuseIntensity += Math.max(0,Vector.dot(lightDir,normal)) * scene.lights[i].intensity;
+            let halfVector = Vector.add(lightDir,viewDir).normalize();
+            specularIntensity += Math.pow(Math.max(0,Vector.dot(halfVector,normal)),material.specularExponent)*scene.lights[i].intensity;
+        }
     }
 
     diffuseIntensity = diffuseIntensity * material.albedo[0];
     specularIntensity = specularIntensity * material.albedo[1];
 
     let result = new TGAColor(material.color.r*diffuseIntensity,material.color.g*diffuseIntensity,material.color.b*diffuseIntensity);
-    result.r = Math.floor(result.r + 255 * specularIntensity);
-    result.g = Math.floor(result.g + 255 * specularIntensity);
-    result.b = Math.floor(result.b + 255 * specularIntensity);
+    result.r = Math.floor(result.r + 255 * specularIntensity + reflectColor.r * material.albedo[2]);
+    result.g = Math.floor(result.g + 255 * specularIntensity + reflectColor.g * material.albedo[2]);
+    result.b = Math.floor(result.b + 255 * specularIntensity + reflectColor.b * material.albedo[2]);
     let max = Math.max(result.r,Math.max(result.g,result.b));
     if(max > 255){
         result.r = Math.floor(result.r * (255/max));
@@ -117,7 +132,7 @@ function render(){
         for (let i = 0; i < image.width; i++) {
             let x = (2*(i + 0.5)/image.width - 1)*Math.tan(half_fov)*image.width/image.height;
             let dir = new Vector(x,y,-1).normalize();
-            image.set(i,j,castRay(camera,dir));
+            image.set(i,j,castRay(camera,dir,0));
         }
     }
 
