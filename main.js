@@ -144,6 +144,16 @@ function sceneIntersect(origin,dir){
         }
     }
 
+    // plane lay on y = -4
+    let dirLength = Number.MAX_SAFE_INTEGER;
+    if(Math.abs(dir.y) > 0.001){
+        dirLength = (-4 - origin.y)/dir.y;
+        let point = Vector.add(origin,Vector.mul(dir,dirLength));
+        if(dirLength > 0 && Math.abs(point.x) < 10 && point.z < -10 && point.z > -30 && dirLength < distance){
+            return {intersect:true,point:point,normal:new Vector(0,1,0),material:new Material(new TGAColor(255,255,255,255),[0.0,10,0.8,0.0],1425,1.0)}
+        }
+    }
+
     if(index !== -1){
         let point = new Vector(origin.x + dir.x * distance,
             origin.y + dir.y * distance,
