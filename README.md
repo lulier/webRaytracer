@@ -8,6 +8,6 @@ https://github.com/ssloy/tinyraytracer
 https://github.com/RayTracing/raytracing.github.io/
 
 
-## Checkout my implementation on Shadertoy
+# Checkout my implementation on Shadertoy!
 
 https://www.shadertoy.com/view/tdVfRD
