@@ -92,8 +92,10 @@ function castRay(origin,dir,depth){
     let refractColor = new TGAColor(0,0,0);
     if(material.albedo[3]){
         let refractDir = refract(dir,normal,material.refractiveIndex);
-        let refractPoint = Vector.add(point,Vector.mul(normal,Vector.dot(refractDir,normal) < 0? -0.001:0.001));
-        refractColor = castRay(refractPoint,refractDir,depth+1);
+        if(refractDir.len() !== 0){
+            let refractPoint = Vector.add(point,Vector.mul(normal,Vector.dot(refractDir,normal) < 0? -0.001:0.001));
+            refractColor = castRay(refractPoint,refractDir,depth+1);
+        }
     }
     
 
