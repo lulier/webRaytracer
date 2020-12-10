@@ -10,4 +10,4 @@ https://github.com/RayTracing/raytracing.github.io/
 
 # Checkout my implementation on Shadertoy!
 
-https://www.shadertoy.com/view/tdVfRD
+https://www.shadertoy.com/view/wsyfDh
